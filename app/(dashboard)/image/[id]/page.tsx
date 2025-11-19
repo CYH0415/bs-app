@@ -4,10 +4,12 @@ import { ArrowLeft, Calendar, MapPin, Tag, Download, Trash2, Edit, Info } from '
 import Link from 'next/link';
 import { ImageEditor } from '@/components/features/ImageEditor';
 
-export default function ImageDetailPage({ params }: { params: { id: string } }) {
+export default async function ImageDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
   // Mock data
   const image = {
-    id: params.id,
+    id: id,
     title: 'Mountain View.jpg',
     url: 'https://placehold.co/800x600', // Placeholder
     takenAt: '2023-10-15 14:30',
