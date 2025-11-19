@@ -15,10 +15,15 @@ export default function ImageDetailPage() {
   
   const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [allTags, setAllTags] = useState<any[]>([]);
+  const [newTagName, setNewTagName] = useState('');
+  const [addingTag, setAddingTag] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchImage();
+      fetchTags();
     }
   }, [id]);
 
@@ -36,6 +41,81 @@ export default function ImageDetailPage() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchTags() {
+    try {
+      const res = await fetch('/api/tags');
+      if (res.ok) {
+        const data = await res.json();
+        setAllTags(data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function handleAddTag(tagId: number) {
+    try {
+      const res = await fetch(`/api/images/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addTag', tagId })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setImage(data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function handleRemoveTag(tagId: number) {
+    try {
+      const res = await fetch(`/api/images/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'removeTag', tagId })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setImage(data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function handleCreateAndAddTag() {
+    if (!newTagName.trim()) return;
+    
+    setAddingTag(true);
+    try {
+      // 创建新标签
+      const createRes = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTagName.trim() })
+      });
+      
+      if (createRes.ok) {
+        const newTag = await createRes.json();
+        // 添加到图片
+        await handleAddTag(newTag.id);
+        // 刷新标签列表
+        await fetchTags();
+        setNewTagName('');
+      } else {
+        const error = await createRes.json();
+        alert(error.error || '创建标签失败');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('创建标签失败');
+    } finally {
+      setAddingTag(false);
     }
   }
 
@@ -68,9 +148,13 @@ export default function ImageDetailPage() {
           <h1 className="text-xl font-bold text-gray-900 truncate max-w-md">{image.title}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsEditing(!isEditing)}
+          >
             <Edit className="h-4 w-4 mr-2" />
-            编辑
+            {isEditing ? '取消编辑' : '编辑'}
           </Button>
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
@@ -86,15 +170,21 @@ export default function ImageDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Image Area */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-gray-100 rounded-xl overflow-hidden border border-gray-200 flex items-center justify-center min-h-[400px] lg:min-h-[600px]">
-            {/* Replace with actual Image component */}
-            <div className="text-gray-400 flex flex-col items-center">
-               <img src={image.url} alt={image.title} className="max-w-full max-h-full object-contain" />
+          {isEditing ? (
+            <ImageEditor 
+              imageUrl={image.url} 
+              imageId={id}
+              onSave={(newUrl) => {
+                setImage({ ...image, url: newUrl });
+                setIsEditing(false);
+              }}
+              onCancel={() => setIsEditing(false)}
+            />
+          ) : (
+            <div className="bg-gray-100 rounded-xl overflow-hidden border border-gray-200 flex items-center justify-center min-h-[400px] lg:min-h-[600px]">
+              <img src={image.url} alt={image.title} className="max-w-full max-h-full object-contain" />
             </div>
-          </div>
-          
-          {/* Editor Placeholder (Hidden by default, shown when editing) */}
-          {/* <ImageEditor /> */}
+          )}
         </div>
 
         {/* Sidebar Info */}
@@ -211,15 +301,65 @@ export default function ImageDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-3">
-                {/* Reuse tags for now, or separate if schema supports it */}
+                {image.tags && image.tags.length > 0 ? image.tags.map((tag: any) => (
+                  <span 
+                    key={tag.id} 
+                    className="px-3 py-1 bg-green-50 text-green-700 text-sm rounded-full font-medium flex items-center gap-1 group"
+                  >
+                    {tag.name}
+                    <button
+                      onClick={() => handleRemoveTag(tag.id)}
+                      className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="移除标签"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )) : (
+                  <span className="text-gray-400 text-sm">暂无标签</span>
+                )}
               </div>
+              
+              {/* 添加已有标签 */}
+              {allTags.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs text-gray-500 mb-2">选择已有标签：</p>
+                  <div className="flex flex-wrap gap-2">
+                    {allTags
+                      .filter(tag => !image.tags?.some((t: any) => t.id === tag.id))
+                      .map(tag => (
+                        <button
+                          key={tag.id}
+                          onClick={() => handleAddTag(tag.id)}
+                          className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          + {tag.name}
+                        </button>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
+              
+              {/* 创建新标签 */}
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  placeholder="添加标签..." 
+                  placeholder="创建新标签..." 
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateAndAddTag()}
                   className="flex-1 text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-blue-500"
+                  disabled={addingTag}
                 />
-                <Button size="sm" variant="secondary">添加</Button>
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={handleCreateAndAddTag}
+                  disabled={addingTag || !newTagName.trim()}
+                >
+                  {addingTag ? '添加中...' : '添加'}
+                </Button>
               </div>
             </CardContent>
           </Card>

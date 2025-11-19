@@ -72,3 +72,74 @@ export async function DELETE(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// 更新图片标签
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const imageId = parseInt(id);
+    const { action, tagId, tagIds } = await request.json();
+
+    const image = await prisma.image.findUnique({
+      where: { id: imageId },
+    });
+
+    if (!image) {
+      return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+    }
+
+    if (image.userId !== session.userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (action === 'addTag' && tagId) {
+      // 添加单个标签
+      await prisma.image.update({
+        where: { id: imageId },
+        data: {
+          tags: {
+            connect: { id: tagId }
+          }
+        }
+      });
+    } else if (action === 'removeTag' && tagId) {
+      // 移除单个标签
+      await prisma.image.update({
+        where: { id: imageId },
+        data: {
+          tags: {
+            disconnect: { id: tagId }
+          }
+        }
+      });
+    } else if (action === 'setTags' && Array.isArray(tagIds)) {
+      // 设置所有标签
+      await prisma.image.update({
+        where: { id: imageId },
+        data: {
+          tags: {
+            set: tagIds.map(id => ({ id }))
+          }
+        }
+      });
+    }
+
+    const updatedImage = await prisma.image.findUnique({
+      where: { id: imageId },
+      include: { tags: true }
+    });
+
+    return NextResponse.json(updatedImage);
+  } catch (error) {
+    console.error('Update image tags error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

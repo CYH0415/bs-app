@@ -23,6 +23,7 @@ model User {
 model Image {
   id          Int      @id @default(autoincrement())
   url         String
+  thumbnailUrl String?  // 缩略图URL
   title       String
   width       Int?
   height      Int?

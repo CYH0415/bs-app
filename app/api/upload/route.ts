@@ -134,6 +134,7 @@ export async function POST(request: Request) {
 
     // Generate unique filename
     const uniqueFilename = `${uuidv4()}-${filename}`;
+    const thumbnailFilename = `thumb-${uniqueFilename}`;
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     
     // Ensure directory exists
@@ -143,12 +144,26 @@ export async function POST(request: Request) {
       // Ignore if exists
     }
 
+    // Save original image
     const filepath = path.join(uploadDir, uniqueFilename);
     await writeFile(filepath, buffer);
+
+    // Generate thumbnail (max width 400px, maintain aspect ratio)
+    const thumbnailBuffer = await sharp(buffer)
+      .resize(400, null, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    
+    const thumbnailPath = path.join(uploadDir, thumbnailFilename);
+    await writeFile(thumbnailPath, thumbnailBuffer);
 
     const image = await prisma.image.create({
       data: {
         url: `/uploads/${uniqueFilename}`,
+        thumbnailUrl: `/uploads/${thumbnailFilename}`,
         title: file.name, // Keep original name as title
         size: buffer.length,
         mimeType: mimeType,

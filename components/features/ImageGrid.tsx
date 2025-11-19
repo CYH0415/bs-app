@@ -21,8 +21,13 @@ export const ImageGrid: React.FC<ImageGridProps> = ({ images = [] }) => {
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {images.map((image) => (
         <Link href={`/image/${image.id}`} key={image.id} className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden hover:shadow-md transition-all">
-          {image.url ? (
-            <img src={image.url} alt={image.title} className="w-full h-full object-cover" />
+          {image.thumbnailUrl || image.url ? (
+            <img 
+              src={image.thumbnailUrl || image.url} 
+              alt={image.title} 
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
               <ImageIcon className="h-8 w-8" />
@@ -31,6 +36,20 @@ export const ImageGrid: React.FC<ImageGridProps> = ({ images = [] }) => {
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
             <p className="text-white text-xs truncate">{image.title}</p>
+            {image.tags && image.tags.length > 0 && (
+              <div className="flex gap-1 mt-1">
+                {image.tags.slice(0, 2).map((tag: any) => (
+                  <span key={tag.id} className="text-white/80 text-xs px-1.5 py-0.5 bg-white/20 rounded">
+                    {tag.name}
+                  </span>
+                ))}
+                {image.tags.length > 2 && (
+                  <span className="text-white/80 text-xs px-1.5 py-0.5 bg-white/20 rounded">
+                    +{image.tags.length - 2}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </Link>
       ))}
