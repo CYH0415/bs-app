@@ -1,25 +1,59 @@
+'use client';
+
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ArrowLeft, Calendar, MapPin, Tag, Download, Trash2, Edit, Info } from 'lucide-react';
 import Link from 'next/link';
 import { ImageEditor } from '@/components/features/ImageEditor';
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 
-export default async function ImageDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default function ImageDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
   
-  // Mock data
-  const image = {
-    id: id,
-    title: 'Mountain View.jpg',
-    url: 'https://placehold.co/800x600', // Placeholder
-    takenAt: '2023-10-15 14:30',
-    location: 'Yosemite National Park, CA',
-    resolution: '4032 x 3024',
-    size: '4.2 MB',
-    camera: 'iPhone 14 Pro',
-    tags: ['风景', '山脉', '自然', '旅行', '天空'],
-    aiTags: ['Mountain', 'Nature', 'Sky', 'Outdoor'],
-  };
+  const [image, setImage] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchImage();
+    }
+  }, [id]);
+
+  async function fetchImage() {
+    try {
+      const res = await fetch(`/api/images/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setImage(data);
+      } else {
+        // Handle 404 or 403
+        router.push('/gallery');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm('确定要删除这张图片吗？')) return;
+    
+    try {
+      const res = await fetch(`/api/images/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push('/gallery');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  if (loading) return <div className="p-8 text-center">加载中...</div>;
+  if (!image) return null;
 
   return (
     <div className="space-y-6">
@@ -42,7 +76,7 @@ export default async function ImageDetailPage({ params }: { params: Promise<{ id
             <Download className="h-4 w-4 mr-2" />
             下载
           </Button>
-          <Button variant="danger" size="sm">
+          <Button variant="danger" size="sm" onClick={handleDelete}>
             <Trash2 className="h-4 w-4 mr-2" />
             删除
           </Button>
@@ -75,11 +109,13 @@ export default async function ImageDetailPage({ params }: { params: Promise<{ id
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {image.aiTags.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md font-medium">
-                    {tag}
+                {image.tags && image.tags.length > 0 ? image.tags.map((tag: any) => (
+                  <span key={tag.id} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md font-medium">
+                    {tag.name}
                   </span>
-                ))}
+                )) : (
+                  <span className="text-gray-400 text-sm">暂无标签</span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -97,7 +133,7 @@ export default async function ImageDetailPage({ params }: { params: Promise<{ id
                 <Calendar className="h-4 w-4 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-gray-500 text-xs">拍摄时间</p>
-                  <p className="font-medium">{image.takenAt}</p>
+                  <p className="font-medium">{image.takenAt ? new Date(image.takenAt).toLocaleString() : '未知'}</p>
                 </div>
               </div>
               
@@ -105,22 +141,22 @@ export default async function ImageDetailPage({ params }: { params: Promise<{ id
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-gray-500 text-xs">拍摄地点</p>
-                  <p className="font-medium">{image.location}</p>
+                  <p className="font-medium">{image.location || '未知'}</p>
                 </div>
               </div>
 
               <div className="border-t border-gray-100 my-2 pt-2 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-500">分辨率</span>
-                  <span className="font-medium">{image.resolution}</span>
+                  <span className="font-medium">{image.width && image.height ? `${image.width} x ${image.height}` : '未知'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">文件大小</span>
-                  <span className="font-medium">{image.size}</span>
+                  <span className="font-medium">{image.size ? `${(image.size / 1024 / 1024).toFixed(2)} MB` : '未知'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">设备</span>
-                  <span className="font-medium">{image.camera}</span>
+                  <span className="font-medium">{image.camera || '未知'}</span>
                 </div>
               </div>
             </CardContent>
@@ -133,11 +169,7 @@ export default async function ImageDetailPage({ params }: { params: Promise<{ id
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-3">
-                {image.tags.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                    {tag}
-                  </span>
-                ))}
+                {/* Reuse tags for now, or separate if schema supports it */}
               </div>
               <div className="flex gap-2">
                 <input 
@@ -154,3 +186,4 @@ export default async function ImageDetailPage({ params }: { params: Promise<{ id
     </div>
   );
 }
+
