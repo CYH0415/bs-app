@@ -4,7 +4,9 @@ import { getSession } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import exifParser from 'exif-parser';
+import exifr from 'exifr';
+import sharp from 'sharp';
+import convert from 'heic-convert';
 
 export async function POST(request: Request) {
   try {
@@ -20,8 +22,118 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filename = `${uuidv4()}-${file.name.replace(/\s/g, '_')}`;
+    let buffer = Buffer.from(await file.arrayBuffer()) as Buffer;
+    let filename = file.name.replace(/\s/g, '_');
+    let mimeType = file.type;
+    
+    // Parse EXIF from the original buffer before any conversion
+    let takenAt = new Date();
+    let location = null;
+    let camera = null;
+    let lensModel = null;
+    let aperture = null;
+    let shutterSpeed = null;
+    let iso = null;
+    let exifDataFull = {};
+    let width = 0;
+    let height = 0;
+
+    try {
+      // Parse with explicit options to ensure we get what we need
+      const exifData = await exifr.parse(buffer, {
+        tiff: true,
+        exif: true,
+        gps: true,
+        mergeOutput: true
+      });
+      
+      if (exifData) {
+        exifDataFull = exifData; // Store full EXIF data
+
+        if (exifData.DateTimeOriginal) {
+          takenAt = new Date(exifData.DateTimeOriginal);
+        } else if (exifData.CreateDate) {
+          takenAt = new Date(exifData.CreateDate);
+        }
+        
+        // Combine Make and Model for better camera info
+        if (exifData.Make || exifData.Model) {
+          camera = [exifData.Make, exifData.Model].filter(Boolean).join(' ');
+        }
+
+        if (exifData.LensModel) {
+          lensModel = exifData.LensModel;
+        }
+
+        if (exifData.FNumber) {
+          aperture = exifData.FNumber;
+        }
+
+        if (exifData.ExposureTime) {
+          // Convert exposure time to string (e.g., "1/50") if it's a number
+          shutterSpeed = exifData.ExposureTime.toString();
+          if (exifData.ExposureTime < 1 && exifData.ExposureTime > 0) {
+             shutterSpeed = `1/${Math.round(1 / exifData.ExposureTime)}`;
+          }
+        }
+
+        if (exifData.ISO) {
+          iso = exifData.ISO;
+        }
+        
+        if (exifData.ExifImageWidth && exifData.ExifImageHeight) {
+          width = exifData.ExifImageWidth;
+          height = exifData.ExifImageHeight;
+        }
+
+        // Extract GPS if available
+        if (exifData.latitude !== undefined && exifData.longitude !== undefined) {
+          location = `${exifData.latitude.toFixed(6)}, ${exifData.longitude.toFixed(6)}`;
+        }
+      }
+    } catch (e) {
+      console.log('EXIF parsing failed', e);
+    }
+
+    // Handle HEIC conversion
+    const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic' || file.type === 'image/heif';
+    
+    if (isHeic) {
+      console.log('Detected HEIC file, attempting conversion...');
+      console.log('Buffer size:', buffer.length);
+      try {
+        // Convert HEIC to JPEG using heic-convert
+        const outputBuffer = await convert({
+          buffer: buffer as any, // Type conversion needed for compatibility
+          format: 'JPEG',
+          quality: 0.9
+        });
+        
+        const convertedBuffer = Buffer.from(outputBuffer);
+        console.log('HEIC conversion successful, new size:', convertedBuffer.length);
+        buffer = convertedBuffer;
+        
+        // Update filename extension and mime type
+        filename = filename.replace(/\.heic$/i, '.jpg');
+        mimeType = 'image/jpeg';
+        
+        // Update dimensions if we didn't get them from EXIF
+        if (width === 0 || height === 0) {
+          const metadata = await sharp(buffer).metadata();
+          width = metadata.width || 0;
+          height = metadata.height || 0;
+        }
+      } catch (e) {
+        console.error('HEIC conversion failed:', e);
+        // If conversion fails, throw error to notify user
+        return NextResponse.json({ error: 'Failed to convert HEIC image. Please try converting to JPG manually.' }, { status: 500 });
+      }
+    } else {
+      console.log('Not a HEIC file:', file.name, file.type);
+    }
+
+    // Generate unique filename
+    const uniqueFilename = `${uuidv4()}-${filename}`;
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     
     // Ensure directory exists
@@ -31,53 +143,25 @@ export async function POST(request: Request) {
       // Ignore if exists
     }
 
-    const filepath = path.join(uploadDir, filename);
+    const filepath = path.join(uploadDir, uniqueFilename);
     await writeFile(filepath, buffer);
-
-    // Parse EXIF
-    let takenAt = new Date();
-    let location = null;
-    let camera = null;
-    let width = 0;
-    let height = 0;
-
-    try {
-      const parser = exifParser.create(buffer);
-      const result = parser.parse();
-      
-      if (result.tags.DateTimeOriginal) {
-        takenAt = new Date(result.tags.DateTimeOriginal * 1000);
-      }
-      
-      // Combine Make and Model for better camera info
-      if (result.tags.Make || result.tags.Model) {
-        camera = [result.tags.Make, result.tags.Model].filter(Boolean).join(' ');
-      }
-      
-      if (result.imageSize) {
-        width = result.imageSize.width || 0;
-        height = result.imageSize.height || 0;
-      }
-
-      // Extract GPS if available
-      if (result.tags.GPSLatitude && result.tags.GPSLongitude) {
-        // Format as "Lat, Long" since we don't have a geocoding service
-        location = `${result.tags.GPSLatitude.toFixed(6)}, ${result.tags.GPSLongitude.toFixed(6)}`;
-      }
-    } catch (e) {
-      console.log('EXIF parsing failed', e);
-    }
 
     const image = await prisma.image.create({
       data: {
-        url: `/uploads/${filename}`,
-        title: file.name,
-        size: file.size,
-        mimeType: file.type,
+        url: `/uploads/${uniqueFilename}`,
+        title: file.name, // Keep original name as title
+        size: buffer.length,
+        mimeType: mimeType,
         width,
         height,
         takenAt,
         camera,
+        location,
+        lensModel,
+        aperture,
+        shutterSpeed,
+        iso,
+        exifData: exifDataFull as any, // Cast to any for Prisma Json type
         userId: session.userId as number,
       },
     });

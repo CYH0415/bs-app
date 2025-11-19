@@ -31,6 +31,11 @@ model Image {
   takenAt     DateTime?
   location    String?
   camera      String?
+  lensModel   String?
+  aperture    Float?
+  shutterSpeed String?
+  iso         Int?
+  exifData    Json?
   createdAt   DateTime @default(now())
   userId      Int
   user        User     @relation(fields: [userId], references: [id])

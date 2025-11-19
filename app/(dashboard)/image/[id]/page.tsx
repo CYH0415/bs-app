@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { ArrowLeft, Calendar, MapPin, Tag, Download, Trash2, Edit, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Tag, Download, Trash2, Edit, Info, Camera, Aperture } from 'lucide-react';
 import Link from 'next/link';
 import { ImageEditor } from '@/components/features/ImageEditor';
 import { useEffect, useState } from 'react';
@@ -155,12 +155,54 @@ export default function ImageDetailPage() {
                   <span className="font-medium">{image.size ? `${(image.size / 1024 / 1024).toFixed(2)} MB` : '未知'}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-gray-500">文件类型</span>
+                  <span className="font-medium">{image.mimeType || '未知'}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-gray-500">设备</span>
                   <span className="font-medium">{image.camera || '未知'}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* EXIF Information */}
+          {(image.lensModel || image.aperture || image.shutterSpeed || image.iso) && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-gray-600" />
+                  拍摄参数
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {image.lensModel && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">镜头</span>
+                    <span className="font-medium">{image.lensModel}</span>
+                  </div>
+                )}
+                {image.aperture && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">光圈</span>
+                    <span className="font-medium">f/{image.aperture}</span>
+                  </div>
+                )}
+                {image.shutterSpeed && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">快门速度</span>
+                    <span className="font-medium">{image.shutterSpeed}s</span>
+                  </div>
+                )}
+                {image.iso && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">ISO</span>
+                    <span className="font-medium">{image.iso}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Custom Tags */}
           <Card>
