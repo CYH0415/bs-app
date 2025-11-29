@@ -4,22 +4,38 @@ import { ImageGrid } from '@/components/features/ImageGrid';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Search, Filter, X, Calendar } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function GalleryPage() {
+function GalleryContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [tags, setTags] = useState<any[]>([]);
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  
+  // Local state for inputs
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(searchParams.get('startDate') || '');
+  const [endDate, setEndDate] = useState(searchParams.get('endDate') || '');
+  
+  const [tags, setTags] = useState<any[]>([]);
+
+  // Sync inputs with URL params when they change externally
+  useEffect(() => {
+    setSearchInput(searchParams.get('search') || '');
+    setStartDate(searchParams.get('startDate') || '');
+    setEndDate(searchParams.get('endDate') || '');
+  }, [searchParams]);
 
   useEffect(() => {
     fetchTags();
-    fetchImages();
   }, []);
+
+  useEffect(() => {
+    fetchImages();
+  }, [searchParams]);
 
   async function fetchTags() {
     try {
@@ -36,13 +52,10 @@ export default function GalleryPage() {
   async function fetchImages() {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (selectedTagId) params.append('tagId', selectedTagId);
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
+      // Use searchParams directly as source of truth
+      const queryString = searchParams.toString();
+      const url = queryString ? `/api/images?${queryString}` : '/api/images';
       
-      const url = params.toString() ? `/api/images?${params.toString()}` : '/api/images';
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -55,43 +68,52 @@ export default function GalleryPage() {
     }
   }
 
+  function updateParams(updates: Record<string, string | null>) {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
+    
+    router.push(`/gallery?${params.toString()}`);
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    fetchImages();
+    updateParams({ search: searchInput });
   }
 
   function handleTagFilter(tagId: string | null) {
-    setSelectedTagId(tagId);
-    setTimeout(() => {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (tagId) params.append('tagId', tagId);
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-      
-      setLoading(true);
-      const url = params.toString() ? `/api/images?${params.toString()}` : '/api/images';
-      fetch(url)
-        .then(res => res.json())
-        .then(data => setImages(data))
-        .finally(() => setLoading(false));
-    }, 0);
+    // If clicking "All", clear tagId AND search (since search might be a tag name)
+    if (!tagId) {
+       // If we want to clear everything:
+       // updateParams({ tagId: null, search: null });
+       // But maybe user wants to keep search text?
+       // The user said "gallery page filtering only relates to selected tag".
+       // Let's just clear tagId.
+       updateParams({ tagId: null });
+    } else {
+       updateParams({ tagId });
+    }
+  }
+  
+  function applyDateFilter() {
+    updateParams({ startDate, endDate });
   }
 
   function clearFilters() {
-    setSearch('');
-    setSelectedTagId(null);
+    router.push('/gallery');
+    setSearchInput('');
     setStartDate('');
     setEndDate('');
-    setTimeout(() => {
-      fetch('/api/images')
-        .then(res => res.json())
-        .then(data => setImages(data))
-        .finally(() => setLoading(false));
-    }, 0);
   }
 
-  const hasActiveFilters = search || selectedTagId || startDate || endDate;
+  const currentTagId = searchParams.get('tagId');
+  const hasActiveFilters = searchParams.toString().length > 0;
 
   return (
     <div className="space-y-6">
@@ -109,8 +131,8 @@ export default function GalleryPage() {
             <Input 
               placeholder="搜索图片、标签、地点..." 
               className="pl-9" 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
           <Button 
@@ -169,7 +191,7 @@ export default function GalleryPage() {
             </div>
           </div>
           
-          <Button size="sm" onClick={fetchImages}>应用筛选</Button>
+          <Button size="sm" onClick={applyDateFilter}>应用筛选</Button>
         </div>
       )}
 
@@ -178,7 +200,7 @@ export default function GalleryPage() {
         <button
           onClick={() => handleTagFilter(null)}
           className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-            !selectedTagId
+            !currentTagId
               ? 'bg-blue-100 text-blue-700' 
               : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
           }`}
@@ -190,7 +212,7 @@ export default function GalleryPage() {
             key={tag.id}
             onClick={() => handleTagFilter(tag.id.toString())}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              selectedTagId === tag.id.toString()
+              currentTagId === tag.id.toString()
                 ? 'bg-blue-100 text-blue-700' 
                 : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
             }`}
@@ -217,6 +239,14 @@ export default function GalleryPage() {
         <ImageGrid images={images} />
       )}
     </div>
+  );
+}
+
+export default function GalleryPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">加载中...</div>}>
+      <GalleryContent />
+    </Suspense>
   );
 }
 

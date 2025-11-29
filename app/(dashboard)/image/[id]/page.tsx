@@ -189,26 +189,7 @@ export default function ImageDetailPage() {
 
         {/* Sidebar Info */}
         <div className="space-y-6">
-          {/* AI Analysis */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Tag className="h-4 w-4 text-blue-600" />
-                智能标签
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {image.tags && image.tags.length > 0 ? image.tags.map((tag: any) => (
-                  <span key={tag.id} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md font-medium">
-                    {tag.name}
-                  </span>
-                )) : (
-                  <span className="text-gray-400 text-sm">暂无标签</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* Metadata */}
           <Card>
@@ -306,10 +287,12 @@ export default function ImageDetailPage() {
                     key={tag.id} 
                     className="px-3 py-1 bg-green-50 text-green-700 text-sm rounded-full font-medium flex items-center gap-1 group"
                   >
-                    {tag.name}
+                    <Link href={`/gallery?search=${encodeURIComponent(tag.name)}`} className="hover:underline">
+                      {tag.name}
+                    </Link>
                     <button
                       onClick={() => handleRemoveTag(tag.id)}
-                      className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
                       title="移除标签"
                     >
                       ×
