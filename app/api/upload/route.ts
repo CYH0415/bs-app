@@ -181,6 +181,55 @@ export async function POST(request: Request) {
       },
     });
 
+    // Asynchronously generate AI tags
+    // We don't await this to keep the upload response fast
+    // But for this assignment, we might want to await it or handle it better
+    // Let's await it for simplicity and immediate feedback
+    try {
+      const base64Image = `data:${mimeType};base64,${buffer.toString('base64')}`;
+      const { generateImageTags } = await import('@/lib/ai');
+      const aiTags = await generateImageTags(base64Image);
+      
+      if (aiTags.length > 0) {
+        const tagIds = [];
+        for (const tagName of aiTags) {
+          try {
+             // Upsert tag for this user to ensure it exists
+             const tag = await prisma.tag.upsert({
+                where: { 
+                  name_userId: { 
+                    name: tagName, 
+                    userId: session.userId as number 
+                  } 
+                },
+                update: {},
+                create: { 
+                  name: tagName, 
+                  userId: session.userId as number 
+                }
+             });
+             tagIds.push({ id: tag.id });
+          } catch (e) {
+            console.error(`Failed to upsert tag ${tagName}`, e);
+          }
+        }
+        
+        if (tagIds.length > 0) {
+          await prisma.image.update({
+              where: { id: image.id },
+              data: {
+                  tags: {
+                      connect: tagIds
+                  }
+              }
+          });
+        }
+      }
+    } catch (aiError) {
+      console.error('Failed to generate AI tags:', aiError);
+      // Don't fail the upload if AI fails
+    }
+
     return NextResponse.json({ message: 'Upload successful', image });
   } catch (error) {
     console.error('Upload error:', error);
