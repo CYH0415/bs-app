@@ -1,6 +1,7 @@
 'use client';
 
 import { ImageGrid } from '@/components/features/ImageGrid';
+import { ImageCarousel } from '@/components/features/ImageCarousel';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Search, Filter, X, Calendar } from 'lucide-react';
@@ -21,6 +22,9 @@ function GalleryContent() {
   const [endDate, setEndDate] = useState(searchParams.get('endDate') || '');
   
   const [tags, setTags] = useState<any[]>([]);
+
+  // Carousel state
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   // Sync inputs with URL params when they change externally
   useEffect(() => {
@@ -236,7 +240,20 @@ function GalleryContent() {
           )}
         </div>
       ) : (
-        <ImageGrid images={images} />
+        <>
+          <ImageGrid 
+            images={images} 
+            onImageClick={(index) => setSelectedImageIndex(index)}
+          />
+          
+          {selectedImageIndex !== null && (
+            <ImageCarousel 
+              images={images}
+              initialIndex={selectedImageIndex}
+              onClose={() => setSelectedImageIndex(null)}
+            />
+          )}
+        </>
       )}
     </div>
   );
