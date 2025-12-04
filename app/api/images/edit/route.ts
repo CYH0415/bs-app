@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import sharp from 'sharp';
+import { generateAndSaveThumbnail } from '@/lib/thumbnail';
 
 export async function POST(request: Request) {
   try {
@@ -43,12 +45,23 @@ export async function POST(request: Request) {
     const filepath = path.join(uploadDir, uniqueFilename);
     await writeFile(filepath, buffer);
 
-    // 更新数据库中的图片 URL
+    // 生成新的缩略图
+    const thumbnailUrl = await generateAndSaveThumbnail(buffer, uploadDir, uniqueFilename);
+
+    // 获取编辑后图片的尺寸
+    const metadata = await sharp(buffer).metadata();
+    const width = metadata.width || null;
+    const height = metadata.height || null;
+
+    // 更新数据库中的图片 URL、缩略图 URL 和尺寸
     const updatedImage = await prisma.image.update({
       where: { id: parseInt(imageId) },
       data: {
         url: `/uploads/${uniqueFilename}`,
-        size: buffer.length
+        thumbnailUrl: thumbnailUrl,
+        size: buffer.length,
+        width,
+        height
       }
     });
 
@@ -58,3 +71,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

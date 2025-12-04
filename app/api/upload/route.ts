@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import exifr from 'exifr';
 import sharp from 'sharp';
 import convert from 'heic-convert';
+import { generateAndSaveThumbnail } from '@/lib/thumbnail';
 
 export async function POST(request: Request) {
   try {
@@ -148,22 +149,13 @@ export async function POST(request: Request) {
     const filepath = path.join(uploadDir, uniqueFilename);
     await writeFile(filepath, buffer);
 
-    // Generate thumbnail (max width 400px, maintain aspect ratio)
-    const thumbnailBuffer = await sharp(buffer)
-      .resize(400, null, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: 85 })
-      .toBuffer();
-    
-    const thumbnailPath = path.join(uploadDir, thumbnailFilename);
-    await writeFile(thumbnailPath, thumbnailBuffer);
+    // Generate and save thumbnail using utility function
+    const thumbnailUrl = await generateAndSaveThumbnail(buffer, uploadDir, uniqueFilename);
 
     const image = await prisma.image.create({
       data: {
         url: `/uploads/${uniqueFilename}`,
-        thumbnailUrl: `/uploads/${thumbnailFilename}`,
+        thumbnailUrl: thumbnailUrl,
         title: file.name, // Keep original name as title
         size: buffer.length,
         mimeType: mimeType,
