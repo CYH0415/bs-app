@@ -11,7 +11,12 @@ export async function GET(request: Request) {
     }
 
     const tags = await prisma.tag.findMany({
-      where: { userId: session.userId as number },
+      where: { 
+        userId: session.userId as number,
+        images: {
+          some: {} // 只返回至少关联一张图片的标签
+        }
+      },
       include: {
         _count: {
           select: { images: true }

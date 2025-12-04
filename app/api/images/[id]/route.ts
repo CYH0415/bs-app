@@ -120,6 +120,23 @@ export async function PATCH(
           }
         }
       });
+
+      // 检查该标签是否还关联其他图片,如果没有则自动删除
+      const tag = await prisma.tag.findUnique({
+        where: { id: tagId },
+        include: {
+          _count: {
+            select: { images: true }
+          }
+        }
+      });
+
+      if (tag && tag._count.images === 0) {
+        // 标签已无关联图片,自动删除
+        await prisma.tag.delete({
+          where: { id: tagId }
+        });
+      }
     } else if (action === 'setTags' && Array.isArray(tagIds)) {
       // 设置所有标签
       await prisma.image.update({
