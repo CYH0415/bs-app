@@ -4,7 +4,7 @@ import { ImageGrid } from '@/components/features/ImageGrid';
 import { ImageCarousel } from '@/components/features/ImageCarousel';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Search, Filter, X, Calendar } from 'lucide-react';
+import { Search, Filter, X, Calendar, Play, CheckSquare } from 'lucide-react';
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -12,7 +12,7 @@ function GalleryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Local state for inputs
@@ -24,7 +24,12 @@ function GalleryContent() {
   const [tags, setTags] = useState<any[]>([]);
 
   // Carousel state
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [isCarouselOpen, setIsCarouselOpen] = useState(false);
+  const [carouselImages, setCarouselImages] = useState<any[]>([]);
+
+  // Selection state
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
 
   // Sync inputs with URL params when they change externally
   useEffect(() => {
@@ -92,13 +97,7 @@ function GalleryContent() {
   }
 
   function handleTagFilter(tagId: string | null) {
-    // If clicking "All", clear tagId AND search (since search might be a tag name)
     if (!tagId) {
-       // If we want to clear everything:
-       // updateParams({ tagId: null, search: null });
-       // But maybe user wants to keep search text?
-       // The user said "gallery page filtering only relates to selected tag".
-       // Let's just clear tagId.
        updateParams({ tagId: null });
     } else {
        updateParams({ tagId });
@@ -116,6 +115,40 @@ function GalleryContent() {
     setEndDate('');
   }
 
+  // Selection Logic
+  function toggleSelectionMode() {
+    if (isSelectionMode) {
+      // Exit selection mode
+      setIsSelectionMode(false);
+      setSelectedImageIds([]);
+    } else {
+      // Enter selection mode
+      setIsSelectionMode(true);
+    }
+  }
+
+  function handleSelectImage(id: number | string) {
+    const numericId = Number(id);
+    setSelectedImageIds(prev => {
+      if (prev.includes(numericId)) {
+        return prev.filter(item => item !== numericId);
+      } else {
+        return [...prev, numericId];
+      }
+    });
+  }
+
+  function startCarousel() {
+    if (selectedImageIds.length === 0) return;
+    
+    // Filter images to only include selected ones, preserving order of selection is tricky if we just filter
+    // But usually user expects order to be same as grid or order of selection. 
+    // Let's use grid order for now.
+    const selectedImages = images.filter(img => selectedImageIds.includes(img.id));
+    setCarouselImages(selectedImages);
+    setIsCarouselOpen(true);
+  }
+
   const currentTagId = searchParams.get('tagId');
   const hasActiveFilters = searchParams.toString().length > 0;
 
@@ -129,28 +162,65 @@ function GalleryContent() {
           </p>
         </div>
         
-        <form onSubmit={handleSearch} className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input 
-              placeholder="搜索图片、标签、地点..." 
-              className="pl-9" 
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-          </div>
-          <Button 
-            variant="outline" 
-            size="md" 
-            className="shrink-0" 
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            筛选
-          </Button>
-          <Button size="md" type="submit">搜索</Button>
-        </form>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+           {/* Selection Mode Controls */}
+           {isSelectionMode ? (
+             <div className="flex items-center gap-2 mr-2">
+               <span className="text-sm text-gray-600 font-medium">
+                 已选 {selectedImageIds.length} 张
+               </span>
+               <Button 
+                 size="md" 
+                 onClick={startCarousel}
+                 disabled={selectedImageIds.length === 0}
+                 className="bg-green-600 hover:bg-green-700 text-white border-transparent"
+               >
+                 <Play className="h-4 w-4 mr-2" />
+                 开始轮播
+               </Button>
+               <Button 
+                 variant="outline" 
+                 size="md" 
+                 onClick={toggleSelectionMode}
+               >
+                 取消
+               </Button>
+             </div>
+           ) : (
+             <Button 
+               variant="outline" 
+               size="md" 
+               className="mr-2"
+               onClick={toggleSelectionMode}
+             >
+               <CheckSquare className="h-4 w-4 mr-2" />
+               轮播模式
+             </Button>
+           )}
+
+          <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 md:flex-none">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input 
+                placeholder="搜索图片、标签、地点..." 
+                className="pl-9" 
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              size="md" 
+              className="shrink-0" 
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              筛选
+            </Button>
+            <Button size="md" type="submit">搜索</Button>
+          </form>
+        </div>
       </div>
 
       {/* 高级筛选面板 */}
@@ -243,14 +313,16 @@ function GalleryContent() {
         <>
           <ImageGrid 
             images={images} 
-            onImageClick={(index) => setSelectedImageIndex(index)}
+            selectable={isSelectionMode}
+            selectedIds={selectedImageIds}
+            onSelect={handleSelectImage}
           />
           
-          {selectedImageIndex !== null && (
+          {isCarouselOpen && (
             <ImageCarousel 
-              images={images}
-              initialIndex={selectedImageIndex}
-              onClose={() => setSelectedImageIndex(null)}
+              images={carouselImages}
+              initialIndex={0}
+              onClose={() => setIsCarouselOpen(false)}
             />
           )}
         </>

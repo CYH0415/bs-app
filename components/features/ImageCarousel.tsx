@@ -101,6 +101,14 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
             <p className="text-white/50 text-sm mt-2">
               {currentIndex + 1} / {images.length}
             </p>
+            
+            <a 
+              href={`/image/${currentImage.id}`}
+              className="inline-block mt-4 text-white/70 hover:text-white text-sm underline underline-offset-4 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              查看详情
+            </a>
           </div>
         </div>
       </div>
