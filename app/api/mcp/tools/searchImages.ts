@@ -26,9 +26,16 @@ export async function searchImages(
     where.tags = { some: { name: { contains: tagName } } };
   }
 
-  // 地点筛选
+  // 地点筛选 - 同时搜索GPS坐标和解析后的地址
   if (location) {
-    where.location = { contains: location };
+    where.OR = where.OR ? [
+      ...where.OR,
+      { location: { contains: location } },
+      { locationAddress: { contains: location } },
+    ] : [
+      { location: { contains: location } },
+      { locationAddress: { contains: location } },
+    ];
   }
 
   // 日期范围筛选
@@ -57,6 +64,7 @@ export async function searchImages(
     thumbnailUrl: image.thumbnailUrl,
     takenAt: image.takenAt?.toISOString() || null,
     location: image.location,
+    locationAddress: image.locationAddress || null, // 添加解析后的地址
     tags: image.tags.map((tag) => ({ id: tag.id, name: tag.name })),
   }));
 }

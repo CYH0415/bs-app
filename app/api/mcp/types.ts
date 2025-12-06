@@ -88,10 +88,12 @@ export interface ImageBasicInfo {
   thumbnailUrl: string | null;
   takenAt: string | null;
   location: string | null;
+  locationAddress?: string | null; // 解析后的可读地址
   tags: Array<{ id: number; name: string }>;
 }
 
 export interface ImageDetailInfo extends ImageBasicInfo {
+  locationAddress?: string | null; // 解析后的可读地址
   width: number | null;
   height: number | null;
   size: number | null;

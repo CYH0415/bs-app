@@ -32,7 +32,7 @@ const TOOLS: ToolDefinition[] = [
         },
         location: {
           type: 'string',
-          description: '按地点筛选',
+          description: '按地点筛选，支持搜索地址（如"北京"、"杭州西湖"）或GPS坐标',
         },
         startDate: {
           type: 'string',

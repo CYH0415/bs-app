@@ -26,6 +26,7 @@ export async function getImageDetails(
     thumbnailUrl: image.thumbnailUrl,
     takenAt: image.takenAt?.toISOString() || null,
     location: image.location,
+    locationAddress: image.locationAddress || null, // 添加解析后的地址
     tags: image.tags.map((tag) => ({ id: tag.id, name: tag.name })),
     width: image.width,
     height: image.height,
