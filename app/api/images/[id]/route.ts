@@ -86,7 +86,7 @@ export async function PATCH(
 
     const { id } = await params;
     const imageId = parseInt(id);
-    const { action, tagId, tagIds } = await request.json();
+    const { action, tagId, tagIds, title } = await request.json();
 
     const image = await prisma.image.findUnique({
       where: { id: imageId },
@@ -100,7 +100,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (action === 'addTag' && tagId) {
+    if (action === 'updateTitle' && title !== undefined) {
+      // 更新标题
+      await prisma.image.update({
+        where: { id: imageId },
+        data: { title: title.trim() }
+      });
+    } else if (action === 'addTag' && tagId) {
       // 添加单个标签
       await prisma.image.update({
         where: { id: imageId },

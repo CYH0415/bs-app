@@ -19,6 +19,8 @@ export default function ImageDetailPage() {
   const [newTagName, setNewTagName] = useState('');
   const [addingTag, setAddingTag] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -132,20 +134,73 @@ export default function ImageDetailPage() {
     }
   }
 
+  async function handleUpdateTitle() {
+    if (!editedTitle.trim()) {
+      alert('标题不能为空');
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/images/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateTitle', title: editedTitle })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setImage(data);
+        setIsEditingTitle(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('更新标题失败');
+    }
+  }
+
   if (loading) return <div className="p-8 text-center">加载中...</div>;
   if (!image) return null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1">
           <Link href="/gallery">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               返回
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-gray-900 truncate max-w-md">{image.title}</h1>
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleUpdateTitle();
+                  if (e.key === 'Escape') setIsEditingTitle(false);
+                }}
+                className="flex-1 text-xl font-bold text-gray-900 border-b-2 border-blue-500 focus:outline-none px-1"
+                autoFocus
+              />
+              <Button size="sm" onClick={handleUpdateTitle}>保存</Button>
+              <Button size="sm" variant="ghost" onClick={() => setIsEditingTitle(false)}>取消</Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-900 truncate max-w-md">{image.title}</h1>
+              <button
+                onClick={() => {
+                  setEditedTitle(image.title);
+                  setIsEditingTitle(true);
+                }}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="编辑标题"
+              >
+                <Edit className="h-4 w-4 text-gray-400" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button 
