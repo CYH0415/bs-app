@@ -8,6 +8,7 @@ import exifr from 'exifr';
 import sharp from 'sharp';
 import convert from 'heic-convert';
 import { generateAndSaveThumbnail } from '@/lib/thumbnail';
+import { reverseGeocode } from '@/lib/geocoding';
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
     // Parse EXIF from the original buffer before any conversion
     let takenAt = new Date();
     let location = null;
+    let locationAddress = null; // 新增：存储解析后的地址
     let camera = null;
     let lensModel = null;
     let aperture = null;
@@ -90,6 +92,23 @@ export async function POST(request: Request) {
         // Extract GPS if available
         if (exifData.latitude !== undefined && exifData.longitude !== undefined) {
           location = `${exifData.latitude.toFixed(6)}, ${exifData.longitude.toFixed(6)}`;
+          console.log('[UPLOAD] GPS coordinates extracted:', location);
+          
+          // 新增：调用地理编码API解析地址
+          try {
+            console.log('[UPLOAD] Calling reverseGeocode...');
+            locationAddress = await reverseGeocode(location);
+            if (locationAddress) {
+              console.log('[UPLOAD] Successfully geocoded location:', locationAddress);
+            } else {
+              console.log('[UPLOAD] Geocoding returned null');
+            }
+          } catch (geocodeError) {
+            console.error('[UPLOAD] Geocoding failed, continuing without address:', geocodeError);
+            // 不中断上传流程，继续处理
+          }
+        } else {
+          console.log('[UPLOAD] No GPS data in EXIF');
         }
       }
     } catch (e) {
@@ -164,6 +183,7 @@ export async function POST(request: Request) {
         takenAt,
         camera,
         location,
+        locationAddress, // 新增：保存解析后的地址
         lensModel,
         aperture,
         shutterSpeed,

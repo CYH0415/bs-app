@@ -210,9 +210,22 @@ export default function ImageDetailPage() {
               
               <div className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-                <div>
+                <div className="flex-1">
                   <p className="text-gray-500 text-xs">拍摄地点</p>
-                  <p className="font-medium">{image.location || '未知'}</p>
+                  {image.locationAddress ? (
+                    <>
+                      <p className="font-medium text-gray-900">{image.locationAddress}</p>
+                      {image.location && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          GPS: {image.location}
+                        </p>
+                      )}
+                    </>
+                  ) : image.location ? (
+                    <p className="font-medium">{image.location}</p>
+                  ) : (
+                    <p className="font-medium">未知</p>
+                  )}
                 </div>
               </div>
 

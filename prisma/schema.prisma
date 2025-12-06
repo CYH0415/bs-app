@@ -30,7 +30,8 @@ model Image {
   size        Int?     // in bytes
   mimeType    String?
   takenAt     DateTime?
-  location    String?
+  location    String?  // GPS坐标，格式: "纬度, 经度"
+  locationAddress String? // 解析后的可读地址
   camera      String?
   lensModel   String?
   aperture    Float?
