@@ -15,6 +15,7 @@ CREATE TABLE `User` (
 CREATE TABLE `Image` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `url` VARCHAR(191) NOT NULL,
+    `thumbnailUrl` VARCHAR(191) NULL,
     `title` VARCHAR(191) NOT NULL,
     `width` INTEGER NULL,
     `height` INTEGER NULL,
@@ -22,7 +23,13 @@ CREATE TABLE `Image` (
     `mimeType` VARCHAR(191) NULL,
     `takenAt` DATETIME(3) NULL,
     `location` VARCHAR(191) NULL,
+    `locationAddress` VARCHAR(191) NULL,
     `camera` VARCHAR(191) NULL,
+    `lensModel` VARCHAR(191) NULL,
+    `aperture` DOUBLE NULL,
+    `shutterSpeed` VARCHAR(191) NULL,
+    `iso` INTEGER NULL,
+    `exifData` JSON NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `userId` INTEGER NOT NULL,
 

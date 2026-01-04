@@ -34,7 +34,7 @@
 
 - Styling: Tailwind CSS (配合 lucide-react 图标库)
 
-- Database: SQLite (开发/提交首选) 或 MySQL。
+- Database: MySQL。
 
 - ORM: Prisma (用于数据建模和查询)。
 
@@ -43,8 +43,6 @@
 - EXIF Parsing: exif-parser。
 
 - Auth: 自定义 JWT 认证 (使用 jose 或 jsonwebtoken) 结合 Next.js Middleware，或者 NextAuth.js。
-
-- AI Integration: Google Gemini API (Google Generative AI SDK).
 
 ## 4. 数据库设计 (Database Schema)
 
@@ -104,9 +102,7 @@ model Tag {
 }
 ```
 
-## 5. 代码结构 (Code Structure for Next.js App Router)
-
-请严格遵循 Next.js App Router 的最佳实践：
+## 5. 代码结构
 ```
 src/
 ├── app/
@@ -121,7 +117,7 @@ src/
 │   │   ├── upload/          # 上传页面
 │   │   └── image/[id]/      # 图片详情与编辑
 │   ├── layout.tsx           # 全局布局
-│   └── page.tsx             # 首页 (重定向或 Landing Page)
+│   └── page.tsx             # 首页
 ├── components/
 │   ├── ui/                  # 通用 UI 组件 (Buttons, Inputs, Modals)
 │   ├── features/            # 业务组件
@@ -137,17 +133,5 @@ src/
 ├── prisma/
 │   └── schema.prisma        # 数据库定义
 └── public/
-    └── uploads/             # (作业可使用自定义 Server Route 读取此目录)
+    └── uploads/             # 文件上传路径
 ```
-
-6. 关键实现提示 (Implementation Notes for AI Agent)
-
-- 文件上传： 由于 Next.js Server Actions 对 FormData 支持良好，优先使用 Server Actions 处理上传，或者使用 API Route `(POST /api/upload)` 配合 Busboy 或 node:stream 写入本地磁盘。
-
-- 本地文件服务： 为了能在浏览器访问本地上传的图片，需要在 next.config.mjs 中配置 images 域名，或者创建一个专门的 API Route `(app/api/uploads/[...path]/route.ts)` 来读取磁盘文件流并返回给前端。
-
-- AI 集成： 使用 Google Gemini Flash 模型进行图片分析，速度快且免费额度够用。
-
-- 状态管理： 使用 React Context 或 Zustand 管理全局状态（如当前选中的图片、用户登录状态）。
-
-- 样式： 使用 Tailwind CSS 也就是 Mobile-First 的写法（例如 grid-cols-1 md:grid-cols-3）。
