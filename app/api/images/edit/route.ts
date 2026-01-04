@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     const updatedImage = await prisma.image.update({
       where: { id: parseInt(imageId) },
       data: {
-        url: `/uploads/${uniqueFilename}`,
+        url: `/api/uploads/${uniqueFilename}`,
         thumbnailUrl: thumbnailUrl,
         size: buffer.length,
         width,

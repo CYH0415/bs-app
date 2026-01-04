@@ -173,7 +173,7 @@ export async function POST(request: Request) {
 
     const image = await prisma.image.create({
       data: {
-        url: `/uploads/${uniqueFilename}`,
+        url: `/api/uploads/${uniqueFilename}`,
         thumbnailUrl: thumbnailUrl,
         title: file.name, // Keep original name as title
         size: buffer.length,

@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth';
 // 删除标签
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -13,7 +13,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tagId = parseInt(params.id);
+    const { id } = await params;
+    const tagId = parseInt(id);
     
     // 验证标签属于当前用户
     const tag = await prisma.tag.findUnique({
@@ -38,7 +39,7 @@ export async function DELETE(
 // 更新标签名称
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -46,7 +47,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tagId = parseInt(params.id);
+    const { id } = await params;
+    const tagId = parseInt(id);
     const { name } = await request.json();
 
     if (!name || name.trim().length === 0) {

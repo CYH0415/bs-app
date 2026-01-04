@@ -52,7 +52,7 @@ export async function saveThumbnail(
   await writeFile(thumbnailPath, buffer);
   
   // Return relative URL
-  return `/uploads/${thumbnailFilename}`;
+  return `/api/uploads/${thumbnailFilename}`;
 }
 
 /**

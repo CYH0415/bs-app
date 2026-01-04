@@ -1,0 +1,59 @@
+services:
+  # MySQL 数据库服务
+  db:
+    image: mysql:8.0
+    container_name: bs-app-mysql
+    restart: unless-stopped
+    environment:
+      # ⚠️ 老师需要修改此密码
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-your_password_here}
+      MYSQL_DATABASE: bs-app
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # 首次启动时自动执行初始化脚本
+      - ./database.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - bs-network
+
+  # Next.js 应用服务
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bs-app-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # 数据库连接 - 使用容器内网络连接
+      # ⚠️ 老师需要将 your_password_here 改为自己设置的密码
+      DATABASE_URL: mysql://root:${DB_PASSWORD:-your_password_here}@db:3306/bs-app
+      # JWT 密钥
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production}
+      # API Keys（使用提供的密钥）
+      ARK_API_KEY: ${ARK_API_KEY}
+      TX_API_KEY: ${TX_API_KEY}
+    volumes:
+      # 持久化上传的图片文件
+      - uploads_data:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - bs-network
+
+volumes:
+  mysql_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  bs-network:
+    driver: bridge
