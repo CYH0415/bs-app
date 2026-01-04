@@ -1,0 +1,147 @@
+PS F:\_Workplace\_Course\bs-app> git log
+commit 76af48416e6b52818630f3238f94675e41123580 (HEAD -> master, origin/master, origin/HEAD)
+Author: CYH <cyh050415@gmail.com>
+Date:   Sun Jan 4 21:07:51 2026 +0800
+
+    feat: docker support and upload api fix
+
+commit 2cd8743e3741d5549a90152af664d6007621f901
+Author: CYH <cyh050415@gmail.com>
+Date:   Sun Jan 4 20:05:48 2026 +0800
+
+    docs: revise document
+
+commit e484331642d12ab587005a2cc1a44229463f7a5e
+Author: CYH <cyh050415@gmail.com>
+Date:   Sat Dec 6 17:17:50 2025 +0800
+
+    feat: support location search for mcp
+
+commit 60f1a1d8fcf47875178b1b912379b7fae65a0b71
+Author: CYH <cyh050415@gmail.com>
+Date:   Sat Dec 6 17:04:22 2025 +0800
+
+    feat: edit title
+
+commit ccace647d6a8747172e9f4eb47749fb86264322b
+Author: CYH <cyh050415@gmail.com>
+Date:   Sat Dec 6 16:57:23 2025 +0800
+
+    docs: geo service doc
+
+commit 9ae73613b71468178ef42ea1e9cba29c4e554706
+Author: CYH <cyh050415@gmail.com>
+Date:   Sat Dec 6 16:56:59 2025 +0800
+
+    feat: tencent location service
+
+commit 604552b26315b705d0c9ccec715237756853214c
+Author: CYH <cyh050415@gmail.com>
+Date:   Thu Dec 4 21:41:06 2025 +0800
+
+    feat: imporve ai prompt
+
+commit e56899f783bbe557f1dde0a96757e4a3fb62aaea
+Author: CYH <cyh050415@gmail.com>
+Date:   Thu Dec 4 21:32:45 2025 +0800
+
+    feat: basic MCP server
+
+commit 70bd0a4ad2d74b11ed0618167fc7bb2f17d1353c
+Author: CYH <cyh050415@gmail.com>
+Date:   Thu Dec 4 20:04:11 2025 +0800
+
+    fix: remove unused tags after deleting them
+
+commit 86cb4a9edb9aa718f1839903c4fc2b61f3d4ca5d
+Author: CYH <cyh050415@gmail.com>
+Date:   Thu Dec 4 19:54:20 2025 +0800
+
+    fix: update thumb after editing
+
+commit 33365684970892044d114c665290961f6a890546
+Author: CYH <cyh050415@gmail.com>
+Date:   Thu Dec 4 19:37:49 2025 +0800
+
+    feat: Change image carousel logic
+
+commit 0ec1af2fa1cd0bcff05a490d7d47ca16f8c6fec0
+Author: CYH <cyh050415@gmail.com>
+Date:   Sat Nov 29 17:47:47 2025 +0800
+
+    feat: Implement image carousel
+
+commit 5e65f3b773369576c878651ead74a4152c5f9a57
+Author: CYH <cyh050415@gmail.com>
+Date:   Sat Nov 29 17:04:33 2025 +0800
+
+    feat: Change tags management logic
+
+commit fc30e0b1c870fb105b01d7fda7d60048357346e0
+Author: CYH <cyh050415@gmail.com>
+Date:   Sat Nov 29 17:03:59 2025 +0800
+
+    feat: Implement  upload functionality including AI utilities.
+
+commit e9098c3d74c0ed6c7a6d8664cccbf0b9b6116b3b
+Author: CYH <cyh050415@gmail.com>
+Date:   Wed Nov 19 18:53:16 2025 +0800
+
+    feat: tag filtering and editing capabilities
+
+    - Implemented tag fetching and filtering in the gallery page.
+    - Added date range filtering options in the gallery.
+    - Introduced tag management (add/remove) in the image detail page.
+    - Created an image editor component for cropping and applying filters.
+    - Updated API routes for handling image editing and tag management.
+    - Added thumbnail generation for uploaded images.
+    - Enhanced UI to display tags associated with images in the gallery.
+    - Updated database schema to include thumbnail URLs for images.
+
+commit f993524c997cf7e6341c05fd7551bcf92d319466
+Author: CYH <cyh050415@gmail.com>
+Date:   Wed Nov 19 17:24:14 2025 +0800
+
+    fix: HEIC convert bug
+
+commit 99b51e70da1e8acd8fa59f864dce5283e62d45d1
+Author: CYH <cyh050415@gmail.com>
+Date:   Wed Nov 19 16:39:52 2025 +0800
+
+    feat: impl basic auth and photo api, init database design
+
+commit 97af009a3ca3bf3c3e21864742e0822e6e4acde5
+Author: CYH <cyh050415@gmail.com>
+Date:   Wed Nov 19 15:26:52 2025 +0800
+
+    fix: update ImageDetailPage to handle async params for image ID
+
+commit e7a3aeb61d8767fb76765669964d09af6166148a
+Author: CYH <cyh050415@gmail.com>
+Date:   Wed Nov 19 15:24:55 2025 +0800
+
+    feat: Basic layout and pages
+
+    - Change app metadata title and description to reflect new branding.
+    - Update language attribute in HTML to Chinese (zh-CN).
+    - Redesign Home page with a new header, hero section, and features section.
+    - Implement Login and Register pages with form components.
+    - Create Gallery page with image grid and search functionality.
+    - Add Image Detail page with metadata and AI analysis tags.
+    - Develop Upload page with file upload functionality.
+    - Create Image Editor and Upload Zone components.
+    - Implement Dashboard navigation with mobile responsiveness.
+    - Add reusable UI components: Button, Card, Input.
+    - Include lucide-react icons for better visual representation.
+
+commit fe1c1962540a677568f5e2e88b17e44fe48c012a
+Author: CYH <cyh050415@gmail.com>
+Date:   Wed Nov 19 14:57:46 2025 +0800
+
+    init readme
+
+commit be980afb396ab06edf4fcb057e29ec4214b70591
+Author: CYH <cyh050415@gmail.com>
+Date:   Wed Nov 19 14:51:57 2025 +0800
+
+    Initial commit from Create Next App
